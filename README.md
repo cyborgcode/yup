@@ -47,6 +47,31 @@ as the function's max duration: 300 s, set in
 | `YTDLP_PATH`    | Use a specific yt-dlp binary instead of the bundled one.                                                      |
 | `FFMPEG_PATH`   | Use a specific ffmpeg binary instead of `ffmpeg-static`.                                                       |
 
+### YouTube: give the server a throwaway login
+
+YouTube answers every cloud server (Vercel included) with "Sign in to confirm
+you're not a bot", whatever client yt-dlp pretends to be. A logged-in
+session gets past it:
+
+1. Create a **new Google account just for this** — never your main one;
+   YouTube may eventually flag it.
+2. On a computer, open a private/incognito window and sign in to YouTube with
+   that account.
+3. In the same tab, go to <https://www.youtube.com/robots.txt> — with only that
+   page open, YouTube won't rotate the cookies you're about to export.
+4. Export the youtube.com cookies as `cookies.txt` with an extension that saves
+   locally (e.g. "Get cookies.txt LOCALLY"; allow it in private windows).
+   See yt-dlp's [guide](https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies).
+5. Close the private window without signing out (signing out kills the
+   cookies).
+6. In Vercel: project → Settings → Environment Variables → add
+   `YTDLP_COOKIES`, paste the whole file (raw or base64 both work), select
+   **Production**, and mark it **Sensitive**.
+7. Redeploy.
+
+When YouTube links start failing with "the site owner needs to refresh its
+cookies", repeat steps 2–7.
+
 ### Good to know
 
 - **YouTube vs. cloud IPs.** YouTube often answers requests from datacenter

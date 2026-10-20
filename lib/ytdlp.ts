@@ -8,6 +8,7 @@ import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 import ffmpegStatic from 'ffmpeg-static'
 import {selectorFor, type RawFormat} from './choices'
+import {normalizeCookies} from './cookies'
 import {safeFilename} from './format'
 import {assertPublicUrl, BlockedUrlError} from './net-guard'
 
@@ -148,12 +149,14 @@ let cookiesPath: Promise<string | undefined> | undefined
 /** YTDLP_COOKIES holds a Netscape cookies.txt (raw or base64) for sites that want a login. */
 function getCookiesFile(): Promise<string | undefined> {
   cookiesPath ??= (async () => {
-    const raw = process.env.YTDLP_COOKIES?.trim()
-    if (!raw) return undefined
-    const text = raw.includes('\t') ? raw : Buffer.from(raw, 'base64').toString('utf8')
+    const text = normalizeCookies(process.env.YTDLP_COOKIES)
+    if (!text) {
+      if (process.env.YTDLP_COOKIES?.trim()) console.error('[cookies] YTDLP_COOKIES is set but holds no usable cookies.txt')
+      return undefined
+    }
     const file = path.join(WORK_DIR, 'cookies.txt')
     await fs.mkdir(WORK_DIR, {recursive: true})
-    await fs.writeFile(file, text.endsWith('\n') ? text : `${text}\n`, {mode: 0o600})
+    await fs.writeFile(file, text, {mode: 0o600})
     return file
   })()
   return cookiesPath
@@ -255,6 +258,10 @@ function cleanFfmpegError(stderr: string): string {
 
 function friendlyError(message: string): UserFacingError {
   if (/not a bot|confirm you.re not|sign in to confirm/i.test(message)) {
+    if (process.env.YTDLP_COOKIES?.trim()) {
+      console.error('[cookies] YouTube rejected the configured cookies — export fresh ones')
+      return new UserFacingError('YouTube rejected this server’s login — the site owner needs to refresh its cookies. Try again later.', 503)
+    }
     return new UserFacingError(
       'YouTube is asking this server to prove it’s not a bot. Try again later — or the site owner can set YTDLP_COOKIES / YTDLP_PROXY.',
       503,
