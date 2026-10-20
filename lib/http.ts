@@ -7,7 +7,7 @@ export function json(body: unknown, status = 200, headers: Record<string, string
   })
 }
 
-/** The message and status to show for any error thrown while yoinking. */
+/** The message and status to show for any error thrown while downloading. */
 export function describeError(error: unknown): {message: string; status: number} {
   if (error instanceof UserFacingError) return {message: error.message, status: error.status}
   const message = error instanceof Error && error.message ? error.message : 'Something went wrong.'

@@ -1,10 +1,10 @@
 import {Suspense} from 'react'
-import {Yoinks} from '@/components/yoinks'
+import {Yup} from '@/components/yup'
 
 export default function Page() {
   return (
     <Suspense>
-      <Yoinks />
+      <Yup />
     </Suspense>
   )
 }

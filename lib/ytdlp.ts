@@ -11,7 +11,7 @@ import {selectorFor, type RawFormat} from './choices'
 import {safeFilename} from './format'
 import {assertPublicUrl, BlockedUrlError} from './net-guard'
 
-const WORK_DIR = path.join(os.tmpdir(), 'yoinks')
+const WORK_DIR = path.join(os.tmpdir(), 'yup')
 const INFO_DIR = path.join(WORK_DIR, 'info')
 const JOB_DIR = path.join(WORK_DIR, 'jobs')
 const BIN_DIR = path.join(WORK_DIR, 'bin')
@@ -229,7 +229,7 @@ async function runYtDlpJson(args: string[], signal: AbortSignal | undefined, tim
   } catch {
     throw new UserFacingError('Could not read the video info for that link.', 502)
   }
-  // playlists, carousels and multi-video posts: yoink the first item
+  // playlists, carousels and multi-video posts: take the first item
   if (parsed._type === 'playlist') {
     const first = parsed.entries?.find(Boolean)
     if (!first) throw new UserFacingError('That link has no videos in it.')
@@ -263,7 +263,7 @@ function friendlyError(message: string): UserFacingError {
   if (/unsupported url/i.test(message)) return new UserFacingError('That site isn’t supported (yet).')
   if (/HTTP Error 404|not found/i.test(message)) return new UserFacingError('Nothing found at that link — is it public?', 404)
   if (/login|log in|sign in|private|age/i.test(message)) {
-    return new UserFacingError(`${message.replace(/\s*Use --cookies.*$/i, '').trim()} — only public videos can be yoinked.`, 403)
+    return new UserFacingError(`${message.replace(/\s*Use --cookies.*$/i, '').trim()} — only public videos can be downloaded.`, 403)
   }
   return new UserFacingError(message.replace(/\s*Use --cookies.*$/i, '').trim() || 'yt-dlp couldn’t read that link.', 502)
 }
@@ -416,7 +416,7 @@ async function attempt(
   void pruneOld(JOB_DIR, 30 * 60 * 1000)
   const jobFile = await writeJson(JOB_DIR, `${randomUUID()}.json`, info)
   const job = new Job(signal, () => fs.rm(jobFile, {force: true}))
-  const title = info.title || 'yoink'
+  const title = info.title || 'video'
 
   try {
     let output: {readable: Readable; ext: string; contentLength?: number}

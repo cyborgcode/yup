@@ -27,6 +27,6 @@ export function safeFilename(title: string, ext: string, max = 80): string {
     .replace(/[\u0000-\u001f\u007f<>:"/\\|?*]+/g, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^[.\s]+|[.\s]+$/g, '')
-  const base = [...cleaned].slice(0, max).join('').trim() || 'yoink'
+  const base = [...cleaned].slice(0, max).join('').trim() || 'video'
   return `${base}.${ext}`
 }

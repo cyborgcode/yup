@@ -95,7 +95,7 @@ a {
   background: none;
   padding: 0;
   cursor: pointer;
-  width: min(288px, 70vw);
+  width: min(154px, 42vw);
   margin-bottom: 12px;
 }
 
@@ -216,7 +216,7 @@ a {
   color: var(--muted);
 }
 
-.yoink-button {
+.go-button {
   margin-top: 0.75em; /* line up with the fieldset border, below its legend */
   border: 1px solid var(--fg);
   border-radius: 0 6px 6px 0;
@@ -227,7 +227,7 @@ a {
   cursor: pointer;
 }
 
-.yoink-button:disabled {
+.go-button:disabled {
   opacity: 0.6;
   cursor: progress;
 }
@@ -432,7 +432,7 @@ kbd {
     padding-top: 0;
   }
 
-  .yoink-button {
+  .go-button {
     padding: 0 16px;
   }
 

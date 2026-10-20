@@ -50,7 +50,7 @@ export function isPrivateIp(ip: string): boolean {
 export class BlockedUrlError extends Error {}
 
 /** Local testing against a dev server on localhost. Never honored in production builds. */
-const allowPrivate = process.env.NODE_ENV !== 'production' && process.env.YOINKS_ALLOW_PRIVATE_URLS === '1'
+const allowPrivate = process.env.NODE_ENV !== 'production' && process.env.YUP_ALLOW_PRIVATE_URLS === '1'
 
 /** Throws unless the url is http(s) and every address its host resolves to is public. */
 export async function assertPublicUrl(raw: string): Promise<URL> {
@@ -61,7 +61,7 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
     throw new BlockedUrlError('That doesn’t look like a link.')
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new BlockedUrlError('Only http and https links can be yoinked.')
+    throw new BlockedUrlError('Only http and https links can be downloaded.')
   }
   if (allowPrivate) return url
   const host = url.hostname.replace(/^\[|\]$/g, '')

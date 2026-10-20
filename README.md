@@ -1,12 +1,12 @@
-# yup — yoinks on the web
+# yup
 
 Paste a link, pick a resolution (or audio-only mp3), and the file downloads
 straight to your device. Works with YouTube, X/Twitter, Instagram, Threads,
 TikTok and the 1,800+ other sites [yt-dlp](https://github.com/yt-dlp/yt-dlp)
 supports — no popups, no fake download buttons, no sketchy redirects.
 
-A browser port of [yoinks](https://github.com/pablostanley/yoinks), the
-terminal app, built to run on Vercel.
+Based on [yoinks](https://github.com/pablostanley/yoinks), the terminal app,
+rebuilt for the browser and Vercel.
 
 ## How it works
 
@@ -68,7 +68,7 @@ npm run build
 ```
 
 To test against media served from your own machine, start the dev server with
-`YOINKS_ALLOW_PRIVATE_URLS=1` — it lifts the private-address block in
+`YUP_ALLOW_PRIVATE_URLS=1` — it lifts the private-address block in
 development only and is ignored by production builds.
 
 ## A note on fair use

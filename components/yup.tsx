@@ -24,10 +24,10 @@ type Phase =
   | {name: 'downloading'; info: Info; choice: Choice; token: string; started: boolean}
   | {name: 'error'; message: string; info?: Info}
 
-const TAGLINE = 'yoink any video. paste. yoink. done.'
+const TAGLINE = 'any video. paste. yup. done.'
 const PLATFORMS = 'youtube · x · instagram · threads · tiktok · +1800 more'
-const HISTORY_KEY = 'yoinks:history'
-const THEME_KEY = 'yoinks:theme'
+const HISTORY_KEY = 'yup:history'
+const THEME_KEY = 'yup:theme'
 const THEMES = ['auto', 'light', 'dark'] as const
 type ThemeMode = (typeof THEMES)[number]
 const SPINNER = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
@@ -56,10 +56,10 @@ function saveHistory(url: string) {
 }
 
 function readSignal(token: string): string | undefined {
-  const name = `yoinks_dl_${token}=`
+  const name = `yup_dl_${token}=`
   const raw = document.cookie.split('; ').find(c => c.startsWith(name))
   if (!raw) return undefined
-  document.cookie = `yoinks_dl_${token}=; Path=/; Max-Age=0; SameSite=Lax`
+  document.cookie = `yup_dl_${token}=; Path=/; Max-Age=0; SameSite=Lax`
   return decodeURIComponent(raw.slice(name.length))
 }
 
@@ -78,7 +78,7 @@ function useSpinner(active: boolean): string {
   return SPINNER[frame]!
 }
 
-export function Yoinks() {
+export function Yup() {
   const params = useSearchParams()
   const [phase, setPhase] = useState<Phase>({name: 'input'})
   const [value, setValue] = useState('')
@@ -237,7 +237,7 @@ export function Yoinks() {
   const hints: Array<[string, string, (() => void)?]> =
     phase.name === 'input'
       ? [
-          ['↵', 'yoink', () => void runProbe(value)],
+          ['↵', 'yup', () => void runProbe(value)],
           ['↑', 'history'],
         ]
       : phase.name === 'probing'
@@ -245,11 +245,11 @@ export function Yoinks() {
         : phase.name === 'picking'
           ? [
               ['↑↓', 'choose'],
-              ['↵', 'yoink', () => startDownload(phase.info, phase.info.choices[selected]!)],
+              ['↵', 'grab', () => startDownload(phase.info, phase.info.choices[selected]!)],
               ['esc', 'back', () => goHome()],
             ]
           : phase.name === 'downloading'
-            ? [['esc', 'formats', () => setPhase({name: 'picking', info: phase.info})], ...(phase.started ? [['↵', 'yoink another', () => goHome()] as [string, string, () => void]] : [])]
+            ? [['esc', 'formats', () => setPhase({name: 'picking', info: phase.info})], ...(phase.started ? [['↵', 'grab another', () => goHome()] as [string, string, () => void]] : [])]
             : [
                 ['↵', 'try again', () => (phase.info ? setPhase({name: 'picking', info: phase.info}) : void runProbe(value))],
                 ['esc', 'home', () => goHome()],
@@ -289,8 +289,8 @@ export function Yoinks() {
                 onKeyDown={onInputKey}
               />
             </fieldset>
-            <button type="submit" className="yoink-button" disabled={phase.name === 'probing'}>
-              yoink
+            <button type="submit" className="go-button" disabled={phase.name === 'probing'}>
+              yup
             </button>
           </form>
         )}
@@ -333,7 +333,7 @@ export function Yoinks() {
             )}
             {phase.name === 'downloading' && (
               <fieldset className="frame status">
-                <legend>{phase.started ? 'Yoinked' : 'Yoinking'}</legend>
+                <legend>{phase.started ? 'Got it' : 'Grabbing'}</legend>
                 {phase.started ? (
                   <>
                     <p>
@@ -342,7 +342,7 @@ export function Yoinks() {
                     </p>
                     <p className="dim">check your downloads. big files keep streaming in the background.</p>
                     <button type="button" className="again" onClick={() => goHome()}>
-                      ↵ yoink another
+                      ↵ grab another
                     </button>
                   </>
                 ) : (
@@ -380,7 +380,7 @@ export function Yoinks() {
           </button>
         </nav>
         <p className="fine-print">
-          personal archiving only — download what you have the right to keep, and be excellent to creators. web port of{' '}
+          personal archiving only — download what you have the right to keep, and be excellent to creators. based on{' '}
           <a href="https://github.com/pablostanley/yoinks">yoinks</a> by Pablo Stanley, powered by{' '}
           <a href="https://github.com/yt-dlp/yt-dlp">yt-dlp</a>.
         </p>
@@ -407,7 +407,7 @@ function VideoCard({info}: {info: Info}) {
 function ErrorBox({message}: {message: string}) {
   return (
     <fieldset className="frame error">
-      <legend>Couldn’t yoink that</legend>
+      <legend>Couldn’t grab that</legend>
       <p>{message}</p>
     </fieldset>
   )

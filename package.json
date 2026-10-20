@@ -1,8 +1,8 @@
 {
-  "name": "yoinks-web",
+  "name": "yup",
   "version": "0.1.0",
   "private": true,
-  "description": "yoink any video from YouTube, X, Instagram, Threads & 1800+ sites — in your browser. paste. yoink. done.",
+  "description": "download any video from YouTube, X, Instagram, Threads & 1800+ sites — in your browser. paste. yup. done.",
   "type": "module",
   "engines": {
     "node": ">=22"

@@ -1,11 +1,11 @@
 import type {CSSProperties} from 'react'
 
-// same block art as the terminal app — each character is a 1×2 grid of
-// half-cells: █ fills both, ▀ the top, ▄ the bottom, ▓ is a lighter shade
+// block art in the style of the yoinks terminal logo — each character is a
+// 1×2 grid of half-cells: █ fills both, ▀ the top, ▄ the bottom, ▓ is a lighter shade
 const ART = [
-  '▓ ▓ █▀█ ▀█▀ █▀▄█ █ █ █▀▀',
-  '▀█▀ █ ▓  ▓  █  ▓ ▓▀▄ ▀▀▓',
-  ' ▀  ▀▀▀ ▀▀▀ ▀  ▀ ▀ ▀ ▀▀▀',
+  '▓ ▓ █ █ █▀█',
+  '▀█▀ █ ▓ █▀▀',
+  ' ▀  ▀▀▀ ▀  ',
 ]
 const COLS = [...ART[0]!].length
 const CELL = 10
@@ -33,7 +33,7 @@ const CELLS: Cell[] = ART.flatMap((line, row) =>
 
 export function Logo({onClick}: {onClick?: () => void}) {
   return (
-    <button type="button" className="logo" onClick={onClick} aria-label="yoinks — home" title="home">
+    <button type="button" className="logo" onClick={onClick} aria-label="yup — home" title="home">
       <svg viewBox={`0 0 ${COLS * CELL} ${ART.length * CELL * 2}`} role="img" aria-hidden="true">
         {CELLS.map((cell, i) => (
           <rect

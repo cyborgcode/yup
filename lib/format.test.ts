@@ -7,7 +7,7 @@ test('safeFilename strips path and control characters but keeps unicode', () => 
   assert.equal(safeFilename('a/b\\c: "d"?', 'mp4'), 'a b c d.mp4')
   assert.equal(safeFilename('  ..hidden  ', 'mp3'), 'hidden.mp3')
   assert.equal(safeFilename('Café ☕ vlog', 'mp4'), 'Café ☕ vlog.mp4')
-  assert.equal(safeFilename('', 'mp4'), 'yoink.mp4')
+  assert.equal(safeFilename('', 'mp4'), 'video.mp4')
 })
 
 test('normalizeUrl adds a scheme and rejects junk', () => {

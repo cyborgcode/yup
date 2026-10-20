@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const url = normalizeUrl(params.get('url') ?? '')
   const choice = params.get('choice') ?? ''
   const token = params.get('token') ?? ''
-  const cookieName = /^[a-z0-9]{6,40}$/i.test(token) ? `yoinks_dl_${token}` : undefined
+  const cookieName = /^[a-z0-9]{6,40}$/i.test(token) ? `yup_dl_${token}` : undefined
   const signal = (value: string): Record<string, string> =>
     cookieName ? {'Set-Cookie': `${cookieName}=${encodeURIComponent(value)}; Path=/; Max-Age=600; SameSite=Lax`} : {}
 
