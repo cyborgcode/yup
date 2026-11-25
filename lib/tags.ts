@@ -31,7 +31,13 @@ function cleanChannel(name: string | undefined): string | undefined {
 
 function describe(info: TrackInfo): {title?: string; artist?: string; music: boolean} {
   const credited = info.artists?.filter(Boolean).join(', ') || info.artist || info.creator
-  if (info.track) return {title: info.track, artist: credited || cleanChannel(info.uploader ?? info.channel), music: true}
+  if (info.track) {
+    // a credited artist, or YouTube's auto-generated "Artist - Topic" channel:
+    // any other uploader is just whoever posted the file, not the artist
+    const channel = info.uploader ?? info.channel
+    const music = Boolean(credited) || /\s-\s*Topic$/i.test(channel ?? '')
+    return {title: info.track, artist: credited || cleanChannel(channel), music}
+  }
 
   // a music video titled "Artist - Song (Official Video)": split it, but only
   // in the Music category, where that dash really separates artist and song

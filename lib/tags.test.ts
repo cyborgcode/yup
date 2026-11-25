@@ -37,6 +37,13 @@ test('anything outside the Music category keeps its title; the channel is the ar
 
 test('"Artist - Topic" channels name the artist', () => {
   assert.equal(audioTags({title: 'Song', uploader: 'Fairuz - Topic'}).artist, 'Fairuz')
+  assert.equal(audioBaseName({title: 'Kifak Inta', track: 'Kifak Inta', uploader: 'Fairuz - Topic'}), 'Fairuz - Kifak Inta')
+})
+
+test('an uploader who is not credited as the artist stays out of the filename', () => {
+  const info = {title: 'big buck bunny 720p surround', track: 'big buck bunny 720p surround', uploader: 'jake@archive.org'}
+  assert.equal(audioBaseName(info), 'big buck bunny 720p surround')
+  assert.equal(audioTags(info).artist, 'jake@archive.org')
 })
 
 test('empty and junk fields are dropped', () => {
