@@ -19,7 +19,11 @@ rebuilt for the browser and Vercel.
     progress bar)
   - separate video + audio streams (YouTube, Vimeo, Reddit, …) are merged on
     the fly by ffmpeg into a fragmented mp4
-  - hls/dash streams are remuxed into mp4; "audio only" is transcoded to mp3
+  - hls/dash streams are remuxed into mp4
+  - "audio only" becomes a 256 kbps mp3 tagged with title, artist, album, year
+    and the thumbnail as square cover art. For YouTube Music links these come
+    from the track's own metadata; for music videos, "Artist - Song (Official
+    Video)" titles are split into artist and song.
 - yt-dlp's standalone binary is downloaded at build time
   (`scripts/fetch-yt-dlp.mjs`, run as `prebuild`) and bundled into the
   functions together with ffmpeg from `ffmpeg-static`, so every deploy ships

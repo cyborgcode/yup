@@ -9,8 +9,10 @@ import {pipeline} from 'node:stream/promises'
 import ffmpegStatic from 'ffmpeg-static'
 import {selectorFor, type RawFormat} from './choices'
 import {normalizeCookies} from './cookies'
+import {buildId3v2} from './id3'
 import {safeFilename} from './format'
 import {assertPublicUrl, BlockedUrlError} from './net-guard'
+import {audioBaseName, audioTags, type TrackInfo} from './tags'
 
 const WORK_DIR = path.join(os.tmpdir(), 'yup')
 const INFO_DIR = path.join(WORK_DIR, 'info')
@@ -277,7 +279,8 @@ function friendlyError(message: string): UserFacingError {
 
 // ---------------------------------------------------------------- probing
 
-export type VideoInfo = RawFormat & {
+export type VideoInfo = RawFormat &
+  TrackInfo & {
   _type?: string
   entries?: VideoInfo[]
   title?: string
@@ -428,7 +431,7 @@ async function attempt(
   try {
     let output: {readable: Readable; ext: string; contentLength?: number}
     if (choiceId === 'mp3') {
-      output = await transcodeMp3(job, jobFile, formats[0]!)
+      output = await transcodeMp3(job, jobFile, formats[0]!, info)
     } else if (formats.length > 1) {
       output = await mergeToMp4(job, jobFile, formats[0]!, formats[1]!)
     } else {
@@ -437,7 +440,7 @@ async function attempt(
     const stream = await job.toWebStream(output.readable)
     return {
       stream,
-      filename: safeFilename(title, output.ext),
+      filename: safeFilename(choiceId === 'mp3' ? audioBaseName(info) : title, output.ext),
       contentType: CONTENT_TYPES[output.ext] ?? 'application/octet-stream',
       contentLength: output.contentLength,
     }
@@ -502,17 +505,105 @@ async function mergeToMp4(job: Job, jobFile: string, video: ResolvedFormat, audi
   return {readable: proc.child.stdout!, ext: 'mp4'}
 }
 
-async function transcodeMp3(job: Job, jobFile: string, audio: ResolvedFormat) {
+async function transcodeMp3(job: Job, jobFile: string, audio: ResolvedFormat, info: VideoInfo) {
   const ffmpeg = await getFfmpeg()
   const input = await inputFor(audio, 3)
+  // constant bitrate: a streamed mp3 has no header announcing its length, so
+  // players work it out from the bitrate, which is only exact for CBR. Tags
+  // are left to buildId3v2 — ffmpeg's own need a seekable output.
   const proc = job.spawn(
     ffmpeg,
-    [...FFMPEG_START, ...input.args, '-map', '0:a:0', '-vn', '-c:a', 'libmp3lame', '-q:a', '0', '-f', 'mp3', 'pipe:1'],
+    [
+      ...FFMPEG_START,
+      ...input.args,
+      '-map',
+      '0:a:0',
+      '-vn',
+      '-c:a',
+      'libmp3lame',
+      '-b:a',
+      '256k',
+      '-map_metadata',
+      '-1',
+      '-id3v2_version',
+      '0',
+      '-write_id3v1',
+      '0',
+      '-f',
+      'mp3',
+      'pipe:1',
+    ],
     ['ignore', 'pipe', 'pipe', 'pipe'],
     'ffmpeg',
   )
   if (input.pipeFd) await job.feed(jobFile, audio.format_id, proc.child.stdio[input.pipeFd] as NodeJS.WritableStream)
-  return {readable: proc.child.stdout!, ext: 'mp3'}
+
+  // title, artist, album and cover go out ahead of the audio
+  const tag = coverArt(job, info.thumbnail).then(cover => buildId3v2(audioTags(info), cover))
+  const audioStream = proc.child.stdout!
+  async function* tagged() {
+    yield await tag
+    yield* audioStream
+  }
+  return {readable: Readable.from(tagged()), ext: 'mp3'}
+}
+
+const COVER_MAX_BYTES = 10 * 1024 * 1024
+const COVER_TIMEOUT_MS = 8_000
+// center square, at most 1000px: album art on YouTube Music sits in the
+// middle of a 16:9 frame, and players show covers square
+const SQUARE_COVER = "crop='min(iw,ih)':'min(iw,ih)',scale='min(1000,iw)':-2"
+
+/**
+ * The video's thumbnail as square JPEG cover art. Best effort: on any
+ * problem the mp3 just goes out without a cover.
+ */
+async function coverArt(job: Job, thumbnail: string | undefined): Promise<Buffer | undefined> {
+  if (!thumbnail) return undefined
+  try {
+    const signal = AbortSignal.any([job.signal, AbortSignal.timeout(COVER_TIMEOUT_MS)])
+    const response = await guardedFetch(thumbnail, {}, signal)
+    const chunks: Buffer[] = []
+    let size = 0
+    for await (const chunk of Readable.fromWeb(response.body as never) as AsyncIterable<Buffer>) {
+      size += chunk.byteLength
+      if (size > COVER_MAX_BYTES) return undefined
+      chunks.push(chunk)
+    }
+    const image = Buffer.concat(chunks)
+    if (!isImage(image)) return undefined
+
+    const dir = await job.scratch()
+    const source = path.join(dir, 'thumbnail')
+    const cover = path.join(dir, 'cover.jpg')
+    await fs.writeFile(source, image)
+    const args = [...FFMPEG_START, '-protocol_whitelist', 'file', '-i', source, '-frames:v', '1', '-vf', SQUARE_COVER]
+    await runOnce(await getFfmpeg(), [...args, '-q:v', '2', '-update', '1', '-y', cover], signal)
+    // a scratch file of this request, not something to bundle
+    return await fs.readFile(/*turbopackIgnore: true*/ cover)
+  } catch {
+    return undefined
+  }
+}
+
+/** JPEG, PNG, WebP or GIF, by their magic bytes — not an error page served as an image. */
+function isImage(data: Buffer): boolean {
+  const ascii = (start: number, end: number) => data.subarray(start, end).toString('latin1')
+  return (
+    (data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) ||
+    ascii(0, 4) === '\x89PNG' ||
+    (ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') ||
+    ascii(0, 4) === 'GIF8'
+  )
+}
+
+/** Run a short command to completion; rejects on a non-zero exit. */
+function runOnce(cmd: string, args: string[], signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, {stdio: 'ignore', signal})
+    child.on('error', reject)
+    child.on('close', code => (code === 0 ? resolve() : reject(new Error(`${path.basename(cmd)} exited with code ${code}.`))))
+  })
 }
 
 const FFMPEG_START = ['-hide_banner', '-loglevel', 'error', '-nostdin']
@@ -651,14 +742,20 @@ class Job {
   }
 
   /** A yt-dlp process writing one format's bytes to stdout. */
+  /** A fresh directory in /tmp, removed when the job ends. */
+  async scratch(): Promise<string> {
+    const dir = path.join(FRAG_DIR, randomUUID())
+    await fs.mkdir(dir, {recursive: true})
+    this.scratchDirs.push(dir)
+    return dir
+  }
+
   async ytDlpStdout(jobFile: string, formatId: string): Promise<Readable> {
     const bin = await getYtDlp()
     const args = [...(await baseArgs(bin)), '--load-info-json', jobFile, '-f', formatId, '--no-part', '-o', '-']
     // its own cwd, or the video and audio processes clobber each other's
     // fragment files (both would be named "-.part-Frag1")
-    const scratch = path.join(FRAG_DIR, randomUUID())
-    await fs.mkdir(scratch, {recursive: true})
-    this.scratchDirs.push(scratch)
+    const scratch = await this.scratch()
     return this.spawn(bin.path, args, ['ignore', 'pipe', 'pipe'], 'yt-dlp', scratch).child.stdout!
   }
 
